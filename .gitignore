@@ -1,0 +1,18 @@
+# 打包输出
+build/
+dist/
+*.spec
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 运行时生成的产物
+Exercises.txt
+Answers.txt
+Grade.txt
+
+# 虚拟环境
+.venv/
+venv/
