@@ -1,0 +1,47 @@
+# 环境与密钥（切勿提交真实 API Key）
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
+id_ed25519
+*.sqlite3
+*.sqlite
+*.db
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite-wal
+*.sqlite-shm
+*.db-wal
+*.db-shm
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 虚拟环境
+.venv/
+venv/
+
+# 编辑器
+.idea/
+.vscode/
+
+# 记忆数据（会话历史、Chroma 向量库等运行时产物）
+.mybot/
+data/
+*.log
+
+# 前端
+ui/node_modules/
+ui/.vite/
+ui/.env
+ui/.env.*
+!ui/.env.example
+
+# 个人测试 PDF：只允许提交合成样本
+samples/*.pdf
+!samples/_synthetic_big.pdf
+!samples/_synthetic_nested.pdf
