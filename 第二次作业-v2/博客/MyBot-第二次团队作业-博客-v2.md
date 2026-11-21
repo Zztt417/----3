@@ -19,7 +19,7 @@
 
 原型交付的是一套**可交互的高保真原型**，不是静态线框：浏览器打开就能点，切页面、切平台、展开工具卡片、开关 Skill 都是真的。这样做的代价是要写样式，好处是**交互规则被验证过一遍**——比如"模型没配置时对话不可用，但历史和热点照常能看"，在原型里是真的点得出来的。
 
-- 在线预览：<https://subscribe-leg-road-deleted.trycloudflare.com>（公开可点；本地也可 `python -m http.server 4097` 打开）
+- 在线预览：<https://zzzky996.github.io/mybot-proto/>（GitHub Pages 托管，本地也可 `python -m http.server 4097` 打开）
 - 原型源码：`原型/index.html`（单文件，无外部依赖）
 - 规模：**4 个模块、9 个页面**，对应仓库里 `ui/src` 的 5 个 Vue 组件
 
@@ -224,7 +224,7 @@
 
 ## 四、原型与设计展示
 
-- 原型在线预览：<https://subscribe-leg-road-deleted.trycloudflare.com>（公开链接，手机也能开）
+- 原型在线预览：<https://zzzky996.github.io/mybot-proto/>（公开链接，手机也能开）
 - 原型源码：`原型/index.html`
 - 设计图：架构、用例、活动、类、时序、ER 共 6 张，均在上文对应小节内，可点开看大图
 - 规格书：仓库 `docs/specs/mybot-spec-v1.0.md`（59 FR / 34 NFR / 31 接口）
@@ -236,7 +236,7 @@
 | 交付物 | 链接 |
 | --- | --- |
 | GitHub 团队仓库 | https://github.com/Zztt417/----3/tree/main/5 |
-| 原型在线预览 | <https://subscribe-leg-road-deleted.trycloudflare.com>（临时公网链接） |
+| 原型在线预览 | <https://zzzky996.github.io/mybot-proto/> |
 | 原型源码 | `原型/index.html` |
 | 软件规格说明书 | `docs/specs/mybot-spec-v1.0.md` |
 | 系统设计说明书 | [MyBot_系统设计说明书.pdf](../docs/MyBot_系统设计说明书.pdf)（v1.0 基线） |
