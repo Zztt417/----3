@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MyBot 高保真原型 · 会话工作区 / 设置 / 命令行</title>
+<style>
+  :root{
+    --bg:#080D18; --panel:#0F1726; --panel2:#131D30; --line:#22304A;
+    --text:#E6EDF7; --muted:#8FA3BF; --dim:#5E7392;
+    --accent:#6C8CFF; --accent2:#F5A524; --ok:#34D399; --danger:#F87171;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:radial-gradient(1200px 600px at 80% -10%, #16233D 0%, var(--bg) 55%);
+    color:var(--text); font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  .app{display:grid; grid-template-columns:248px 1fr; height:100vh; overflow:hidden}
+
+  /* ---------- 左侧原型导航 ---------- */
+  aside{border-right:1px solid var(--line); background:rgba(10,16,28,.72); display:flex; flex-direction:column}
+  .brand{display:flex; gap:10px; align-items:center; padding:18px 18px 14px}
+  .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(160deg,#4F46E5,#0284C7);
+        display:grid;place-items:center;font-weight:700;font-size:15px}
+  .brand b{font-size:15px; letter-spacing:.5px}
+  .brand small{display:block;color:var(--dim);font-size:10px;letter-spacing:1.5px}
+  .nav{overflow:auto; padding:6px 10px 18px}
+  .group{margin-top:14px}
+  .group h4{margin:0 0 6px; padding:0 8px; font-size:10.5px; color:var(--dim); letter-spacing:1.2px; font-weight:600}
+  .item{display:flex; gap:9px; align-items:center; padding:8px 10px; border-radius:8px; cursor:pointer;
+        color:var(--muted); border:1px solid transparent; font-size:12.5px}
+  .item:hover{background:#101A2C; color:var(--text)}
+  .item.on{background:linear-gradient(90deg,#1A2744,#141E33); color:#fff; border-color:#2B3E60}
+  .num{width:20px;height:20px;border-radius:6px;background:#1A2744;color:var(--dim);
+       display:grid;place-items:center;font-size:10px;flex:0 0 auto}
+  .item.on .num{background:var(--accent); color:#08101F; font-weight:700}
+  .foot{margin-top:auto; padding:12px 16px 16px; color:var(--dim); font-size:10.5px; border-top:1px solid var(--line)}
+
+  /* ---------- 右侧舞台 ---------- */
+  main{overflow:auto; padding:22px 26px 40px}
+  .bar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px}
+  .bar h1{margin:0; font-size:18px; font-weight:700}
+  .bar h1 span{color:var(--dim); font-weight:400; font-size:12.5px; margin-left:8px}
+  .tagline{display:flex; gap:8px; flex-wrap:wrap}
+  .tag{border:1px solid var(--line); color:var(--muted); padding:4px 9px; border-radius:999px; font-size:11px}
+  .tag.hot{border-color:#6C8CFF55; color:#A9BCFF; background:#6C8CFF14}
+
+  .screen{display:none}
+  .screen.on{display:block}
+
+  .frame{border:1px solid var(--line); border-radius:14px; background:linear-gradient(180deg,#0E1626,#0B1220);
+         box-shadow:0 24px 60px -40px #000; overflow:hidden}
+  .frame .cap{display:flex; gap:6px; align-items:center; padding:9px 12px; border-bottom:1px solid var(--line);
+              background:#0B1322; color:var(--dim); font-size:11px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#2A3A57}
+  .dot.r{background:#3B2430}.dot.y{background:#3B3524}.dot.g{background:#1E3A31}
+  .frame .body{padding:16px}
+  .annot{margin-top:12px; display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px}
+  .note{border-left:2px solid var(--accent); background:#0F1A2E; border-radius:0 8px 8px 0; padding:9px 12px; color:var(--muted); font-size:11.5px; line-height:1.6}
+  .note b{color:var(--text)}
+
+  /* ---------- 通用小组件 ---------- */
+  .cols{display:grid; grid-template-columns:250px 1fr 260px; gap:0; min-height:460px}
+  .col{padding:14px; border-right:1px solid var(--line)}
+  .col:last-child{border-right:none}
+  .col h3{margin:0 0 10px; font-size:11px; letter-spacing:1.2px; color:var(--dim); font-weight:600}
+  .btn{border:1px solid #2B3E60; background:#141F33; color:var(--text); border-radius:8px; padding:8px 12px;
+       cursor:pointer; font-size:12px; font-family:inherit}
+  .btn:hover{background:#18263D}
+  .btn.primary{background:linear-gradient(135deg,#4F46E5,#2563EB); border-color:#4F6BFF}
+  .btn.ghost{background:transparent}
+  .btn.danger{background:#2A1520; border-color:#5B2430; color:#FFB4B4}
+  .sess{border:1px solid transparent; border-radius:9px; padding:9px 10px; cursor:pointer; margin-bottom:6px}
+  .sess:hover{background:#101A2C}
+  .sess.on{background:#14203A; border-color:#2B3E60}
+  .sess b{display:block; font-size:12.5px; font-weight:600; color:#EAF1FB}
+  .sess small{color:var(--dim); font-size:10px}
+  .chat{display:flex; flex-direction:column; gap:12px}
+  .msg{max-width:86%; padding:11px 13px; border-radius:12px; line-height:1.65; font-size:12.5px; color:#DCE7F7}
+  .msg .who{font-size:9.5px; letter-spacing:1.4px; color:var(--dim); margin-bottom:6px}
+  .msg.user{align-self:flex-end; background:#1B2A46; border:1px solid #2C4166}
+  .msg.bot{align-self:flex-start; background:#0E1A2C; border:1px solid #20314C}
+  .toolcard{border:1px solid #26374F; border-radius:10px; margin:8px 0; background:#0B1424}
+  .toolcard .th{display:flex; align-items:center; gap:8px; padding:8px 10px; cursor:pointer; font-size:11.5px; color:#A9BCFF}
+  .toolcard .tb{display:none; padding:8px 10px; border-top:1px solid #1B2A40; color:var(--muted); font-size:11px; line-height:1.6}
+  .toolcard.open .tb{display:block}
+  .badge{padding:2px 7px; border-radius:6px; font-size:9.5px; border:1px solid}
+  .badge.ok{color:#7BE3BC; border-color:#1E4A3C; background:#0E2A22}
+  .badge.warn{color:#FFD08A; border-color:#4A3A1E; background:#2A2110}
+  .card{border:1px solid var(--line); border-radius:10px; padding:11px 12px; background:#0D1728; margin-bottom:10px}
+  .card .k{font-size:10px; color:var(--dim); letter-spacing:1.1px}
+  .card .v{font-size:13px; margin-top:5px}
+  .chip{display:inline-block; padding:3px 8px; border-radius:6px; background:#12203A; color:#A9BCFF;
+        font-size:10.5px; margin:3px 4px 0 0; border:1px solid #22334F}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid #17253A}
+  .row:last-child{border-bottom:none}
+  .row b{font-weight:600; font-size:12.5px}
+  .row small{display:block; color:var(--dim); font-size:10.5px; margin-top:3px}
+  .input{display:flex; gap:8px; margin-top:12px}
+  .input input{flex:1; background:#0B1424; border:1px solid #26374F; color:var(--text); border-radius:9px;
+               padding:10px 12px; font-size:12.5px; font-family:inherit; outline:none}
+  .input input:focus{border-color:#3B5BFF}
+  .cli{background:#070C15; border:1px solid #1D2A3E; border-radius:10px; padding:14px; font-family:Consolas,monospace;
+       font-size:12px; line-height:1.85; color:#C9D6E8}
+  .cli .p{color:#7BE3BC}.cli .c{color:#8FA3BF}.cli .o{color:#93A7C4}
+  .files{font-family:Consolas,monospace; font-size:12px}
+  .files div{padding:5px 8px; border-radius:6px; color:var(--muted)}
+  .files div.dir{color:#A9BCFF}
+  .files div:hover{background:#101A2C; color:var(--text)}
+  .fgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .label{font-size:10.5px; color:var(--dim); margin:0 0 5px}
+  .field{background:#0B1424; border:1px solid #26374F; border-radius:8px; padding:9px 10px; font-size:12px; color:#C9D6E8}
+  .switch{width:38px;height:21px;border-radius:999px;background:#26374F;position:relative}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:15px;height:15px;border-radius:50%;background:#93A7C4}
+  .switch.on{background:#2F55C9}.switch.on::after{left:20px;background:#fff}
+
+  /* 弹窗 */
+  .modal{position:fixed; inset:0; background:rgba(4,8,16,.72); display:none; place-items:center; z-index:50}
+  .modal.on{display:grid}
+  .dialog{width:520px; border:1px solid #2B3E60; border-radius:14px; background:#0E1728; box-shadow:0 30px 80px -30px #000}
+  .dialog .dh{padding:14px 16px; border-bottom:1px solid #1C2A42; display:flex; align-items:center; gap:9px}
+  .dialog .dh b{font-size:13.5px}
+  .dialog .db{padding:16px; color:#C9D6E8; font-size:12.5px; line-height:1.7}
+  .dialog .df{padding:12px 16px; border-top:1px solid #1C2A42; display:flex; justify-content:flex-end; gap:8px}
+  .code{background:#070C15; border:1px solid #1D2A3E; border-radius:8px; padding:10px; margin-top:10px;
+        font-family:Consolas,monospace; font-size:11.5px; color:#B9C8DC; white-space:pre-wrap}
+  .toast{position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px); opacity:0;
+         background:#12203A; border:1px solid #2B3E60; color:#DCE7F7; padding:10px 16px; border-radius:10px;
+         font-size:12px; transition:.25s; pointer-events:none; z-index:60}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="mark">M</div>
+      <div><b>MyBot 原型</b><small>LOCAL AGENT · v0.2</small></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="foot">高保真原型 · 第二次团队作业<br/>可点击 · 数据为演示数据</div>
+  </aside>
+  <main>
+    <div class="bar">
+      <h1 id="title">会话工作台<span id="sub"></span></h1>
+      <div class="tagline" id="tags"></div>
+    </div>
+
+    <!-- 1 工作台 -->
+    <section class="screen on" data-screen="1">
+      <div class="frame">
+        <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          工作台 · http://127.0.0.1:8000/</div>
+        <div class="body">
+          <div class="cols">
+            <div class="col">
+              <h3>会话 CONVERSATIONS</h3>
+              <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="newSession()">+ 新建对话</button>
+              <div id="sessionList"></div>
+            </div>
+            <div class="col" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:10px">
+              <div style="font-size:26px;color:#24344F">◈</div>
+              <div style="font-size:13px;color:var(--muted)">从左侧选一个会话，或新建一个</div>
+              <div style="font-size:11px;color:var(--dim);max-width:340px;line-height:1.7">
+                每个会话绑定独立的工作目录与记忆；跨会话检索需要你明确要求。</div>
+              <button class="btn" onclick="go(2)">进入最近会话 →</button>
+            </div>
+            <div class="col">
+              <h3>运行状态 SYSTEM</h3>
+              <div class="card"><div class="k">模型</div><div class="v">deepseek-chat</div></div>
+              <div class="card"><div class="k">记忆</div><div class="v"><span class="badge ok">ON</span> 3 条</div></div>
+              <div class="card"><div class="k">工具</div><div class="v">8 个<span style="color:var(--dim);font-size:11px"> · 见对话页</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>空态</b>：没有会话时不硬塞内容，只给一条明确出路。</div>
+        <div class="note"><b>会话即作用域</b>：一个会话 = 一个工作目录 + 一套记忆。</div>
+        <div class="note"><b>状态常驻</b>：模型、记忆、工具数固定显示，避免"它到底记得啥"。</div>
+      </div>
+    </section>
+
+    <!-- 2 对话主区 -->
+    <section class="screen" data-screen="2">
+      <div class="frame">
+        <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          对话主区 · session 20261109-000303-w9g · 运行 #R-2418</div>
+        <div class="body">
+          <div class="cols">
+            <div class="col">
+              <h3>会话</h3>
+              <div id="sessionList2"></div>
+            </div>
+            <div class="col">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <div><b style="font-size:13.5px">演示 · 读代码讲结构</b>
+                  <div style="color:var(--dim);font-size:10.5px;margin-top:3px">工作目录 E:\workspace\mybot · 1 条记忆</div></div>
+                <span class="badge ok">运行中</span>
+              </div>
+              <div class="chat" id="chat">
+                <div class="msg user"><div class="who">YOU</div>用三句话说明 agent.py 里的循环怎么实现的</div>
+                <div class="msg bot">
+                  <div class="who">AGENT</div>
+                  <div>它先把你的话写进会话，然后在最多 10 步的循环里反复问模型。</div>
+                  <div class="toolcard" onclick="this.classList.toggle('open')">
+                    <div class="th">▸ read_file · <span style="color:var(--dim)">mybot/agent.py</span><span class="badge ok" style="margin-left:auto">成功 0.4s</span></div>
+                    <div class="tb">工具返回 4.2 KB 正文，已截断到 2 万字符以内；本轮共调用 1 次。</div>
+                  </div>
+                  <div>模型回工具调用时，就逐个执行、把结果写回去，再进入下一轮。</div>
+                  <div>没有工具调用就直接返回结论；超过步数就提示"已达到最大步数"。</div>
+                  <div style="margin-top:8px;color:var(--dim);font-size:11px">工具过程默认折叠，点开才看。</div>
+                </div>
+              </div>
+              <div class="input">
+                <input id="msgInput" placeholder="给 agent 一个任务…（Enter 发送）" onkeydown="if(event.key==='Enter')sendMsg()"/>
+                <button class="btn primary" onclick="sendMsg()">发送</button>
+              </div>
+            </div>
+            <div class="col">
+              <h3>运行状态</h3>
+              <div class="card"><div class="k">MODEL</div><div class="v">deepseek-chat</div></div>
+              <div class="card"><div class="k">MEMORY</div><div class="v">长期 ON · 本会话 1</div></div>
+              <div class="card"><div class="k">TOOLS</div>
+                <div style="margin-top:6px">
+                  <span class="chip">read_file</span><span class="chip">write_file</span><span class="chip">run_shell</span>
+                  <span class="chip">web_search</span><span class="chip">pdf_parse</span><span class="chip">memory_save</span>
+                </div>
+              </div>
+              <div class="card"><div class="k">RUN</div><div class="v">#R-2418 · 第 2 步</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>过程可折叠</b>：每次工具调用一张卡，带工具名、耗时、结果状态。</div>
+        <div class="note"><b>只给结论</b>：默认不把中间推理刷屏，需要时展开。</div>
+        <div class="note"><b>运行编号</b>：一次提问一个编号，排障时能对上日志。</div>
+      </div>
+    </section>
+
+    <!-- 3 授权弹窗 -->
+    <section class="screen" data-screen="3">
+      <div class="frame">
+        <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          授权确认 · 高风险动作拦截</div>
+        <div class="body" style="min-height:420px;display:grid;place-items:center">
+          <div style="text-align:center;color:var(--muted);font-size:12.5px;line-height:1.9;max-width:520px">
+            Agent 想执行下面这条命令，涉及本机文件写入。<br/>原型中点击"立即体验"弹出真实弹窗。
+            <div style="margin-top:16px"><button class="btn primary" onclick="openModal()">立即体验</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>先问再做</b>：写文件、执行命令、发邮件三类动作必须先确认。</div>
+        <div class="note"><b>看得懂</b>：弹窗里给出完整命令与目标路径，不用猜。</div>
+        <div class="note"><b>拒绝留痕</b>：拒绝后命令不执行，会话里留一条"已拒绝"。</div>
+      </div>
+    </section>
+
+    <!-- 4 状态面板 -->
+    <section class="screen" data-screen="4">
+      <div class="frame">
+        <div class="cap">运行状态 · 全部能力一览</div>
+        <div class="body">
+          <div class="fgrid">
+            <div>
+              <div class="card"><div class="k">MODEL / PROVIDER</div><div class="v">deepseek-chat · https://api.deepseek.com/v1</div></div>
+              <div class="card"><div class="k">MEMORY</div>
+                <div class="v">短期 12 / 30 条 · 长期 3 条 · 检索 top-3</div>
+                <div style="color:var(--dim);font-size:10.5px;margin-top:6px">压缩只在回合开始时触发</div></div>
+              <div class="card"><div class="k">SESSION</div>
+                <div class="v">20261109-000303-w9g</div>
+                <div style="color:var(--dim);font-size:10.5px;margin-top:6px">工作目录 E:\workspace\mybot</div></div>
+            </div>
+            <div>
+              <div class="card"><div class="k">TOOLS（8）</div>
+                <div style="margin-top:6px">
+                  <span class="chip">read_file</span><span class="chip">write_file</span><span class="chip">run_shell</span>
+                  <span class="chip">web_search</span><span class="chip">web_fetch</span><span class="chip">pdf_parse</span>
+                  <span class="chip">memory_save</span><span class="chip">memory_search_other_sessions</span>
+                </div>
+              </div>
+              <div class="card"><div class="k">MCP</div><div class="v">未接入（邮件默认关闭）</div></div>
+              <div class="card"><div class="k">SECURITY</div><div class="v">仅监听 127.0.0.1 · 密钥在仓库外</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>一眼可见</b>：模型、记忆、工具、会话四件事，决定它"现在能干什么"。</div>
+        <div class="note"><b>不隐藏降级</b>：MCP 未接入、记忆关闭都直接写出来。</div>
+      </div>
+    </section>
+
+    <!-- 5 文件浏览 -->
+    <section class="screen" data-screen="5">
+      <div class="frame">
+        <div class="cap">资源 · 会话工作目录（越权默认拒绝）</div>
+        <div class="body">
+          <div class="cols" style="grid-template-columns:320px 1fr">
+            <div class="col">
+              <h3>E:\workspace\mybot</h3>
+              <div class="files">
+                <div class="dir">📁 mybot/</div>
+                <div style="padding-left:22px">📄 agent.py · 5.9 KB</div>
+                <div style="padding-left:22px">📄 memory.py · 8.7 KB</div>
+                <div style="padding-left:22px">📄 long_memory.py · 9.1 KB</div>
+                <div class="dir">📁 ui/</div>
+                <div class="dir">📁 samples/</div>
+                <div>📄 requirements.txt · 156 B</div>
+                <div>📄 README.md · 13 KB</div>
+              </div>
+              <div style="margin-top:12px"><button class="btn" onclick="toast('演示：选择文件后可在右侧预览')">上传文件</button></div>
+            </div>
+            <div class="col">
+              <h3>预览 · requirements.txt</h3>
+              <div class="cli">
+openai&gt;=1.40.0<br/>python-dotenv&gt;=1.0.0<br/>chromadb&gt;=1.0<br/>
+sentence-transformers&gt;=3.0<br/>pdfplumber&gt;=0.11<br/>mcp&gt;=1.26.0,&lt;2.0.0<br/>
+fastapi&gt;=0.115.0<br/>uvicorn[standard]&gt;=0.30.0
+              </div>
+              <div style="margin-top:12px;color:var(--dim);font-size:11px;line-height:1.7">
+                原型中只读预览；写入需走授权确认。目录外路径一律拒绝，不做"警告后放行"。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>目录即边界</b>：工具只能在该目录内读写，越界直接失败。</div>
+        <div class="note"><b>预览不改</b>：查看与写入分开，避免误触。</div>
+      </div>
+    </section>
+
+    <!-- 6 设置·模型 -->
+    <section class="screen" data-screen="6">
+      <div class="frame">
+        <div class="cap">设置 · 模型与 Provider</div>
+        <div class="body">
+          <div class="fgrid">
+            <div class="card"><div class="k">PROVIDER</div><div class="v">OpenAI 兼容（自定义 Base URL）</div></div>
+            <div class="card"><div class="k">MODEL</div><div class="v">deepseek-chat</div></div>
+            <div class="card"><div class="k">BASE URL</div><div class="v">https://api.deepseek.com/v1</div></div>
+            <div class="card"><div class="k">API KEY</div><div class="v">sk-59b4••••••af54 <span style="color:var(--dim);font-size:10.5px">（存在仓库外）</span></div></div>
+            <div class="card"><div class="k">TEMPERATURE</div><div class="v">0.0</div></div>
+            <div class="card"><div class="k">MAX STEPS</div><div class="v">10</div></div>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn primary" onclick="toast('演示：配置已保存，下一轮对话生效')">保存</button>
+            <button class="btn ghost" onclick="toast('演示：已恢复默认值')">恢复默认</button>
+          </div>
+          <div style="margin-top:12px;color:var(--dim);font-size:11px">修改后立即生效，无需重启；密钥输入框只显示前后四位。</div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>换模型只改三行</b>：Provider / 模型名 / Base URL。</div>
+        <div class="note"><b>密钥脱敏</b>：界面永不显示完整 Key。</div>
+      </div>
+    </section>
+
+    <!-- 7 设置·记忆 -->
+    <section class="screen" data-screen="7">
+      <div class="frame">
+        <div class="cap">设置 · 记忆与会话</div>
+        <div class="body">
+          <div class="row"><div><b>长期记忆</b><small>关闭后只保留短期上下文</small></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="row"><div><b>压缩阈值</b><small>超过该条数触发摘要压缩</small></div><div class="field" style="min-width:110px;text-align:center">30 条</div></div>
+          <div class="row"><div><b>保留最近</b><small>压缩后保留原文的条数</small></div><div class="field" style="min-width:110px;text-align:center">10 条</div></div>
+          <div class="row"><div><b>检索条数 top-k</b><small>每轮召回的记忆条数</small></div><div class="field" style="min-width:110px;text-align:center">3 条</div></div>
+          <div class="row"><div><b>跨会话检索</b><small>默认关闭，需在对话里明确要求</small></div><div class="switch" onclick="this.classList.toggle('on')"></div></div>
+          <div style="margin-top:14px;color:var(--dim);font-size:11px;line-height:1.8">
+            记忆按会话隔离：检索条件固定带 session_id；删除会话时，向量与对话文件一起清除。
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>参数可见</b>：阈值不是黑盒，改了立刻能看到效果。</div>
+        <div class="note"><b>默认安全</b>：跨会话检索默认关，避免"串味"。</div>
+      </div>
+    </section>
+
+    <!-- 8 设置·MCP -->
+    <section class="screen" data-screen="8">
+      <div class="frame">
+        <div class="cap">设置 · MCP 服务</div>
+        <div class="body">
+          <div class="row"><div><b>邮件 MCP</b><small>uvx mcp-email-server@latest stdio</small></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="row"><div><b>暴露工具</b><small>服务共 18 个工具，只开放 send_email</small></div><div class="field" style="min-width:150px">send_email</div></div>
+          <div class="row"><div><b>收件人白名单</b><small>由邮件服务端强制校验，模型无法绕过</small></div><div class="field" style="min-width:150px">3 个地址</div></div>
+          <div class="row"><div><b>连接状态</b><small>握手超时 60 秒，失败只降级不阻断</small></div><div><span class="badge warn">未连接</span></div></div>
+          <div style="margin-top:14px"><button class="btn" onclick="toast('演示：正在重连 MCP …')">重新连接</button></div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>最小权限</b>：18 个工具只开 1 个，读信删信都不给。</div>
+        <div class="note"><b>失败可降级</b>：连不上服务，其他能力照常。</div>
+      </div>
+    </section>
+
+    <!-- 9 CLI -->
+    <section class="screen" data-screen="9">
+      <div class="frame">
+        <div class="cap">命令行 · python main.py</div>
+        <div class="body">
+          <div class="cli">
+<div><span class="p">你 &gt;</span> /help</div>
+<div class="o">可用命令：<br/>
+/sessions &nbsp;列出所有会话<br/>
+/new [标题] &nbsp;新建会话并切换<br/>
+/switch &lt;编号&gt; &nbsp;切换会话<br/>
+/delete &lt;编号&gt; -y &nbsp;删除会话（含记忆）<br/>
+/history [N] &nbsp;最近对话<br/>
+exit / quit &nbsp;退出</div>
+<div style="margin-top:10px"><span class="p">你 &gt;</span> 读一下 requirements.txt，告诉我装了哪些库</div>
+<div class="o">[工具] read_file(path="requirements.txt") → 156 B<br/>
+这个项目依赖 8 个库：openai、python-dotenv、chromadb、sentence-transformers、pdfplumber、mcp、fastapi、uvicorn。</div>
+<div style="margin-top:10px"><span class="p">你 &gt;</span> <span style="opacity:.5">▌</span></div>
+          </div>
+          <div style="margin-top:12px;color:var(--dim);font-size:11px">命令行与网页共用同一套 Agent；会话、工具、记忆完全一致。</div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>同一内核</b>：CLI 不是简化版，是同一条链路。</div>
+        <div class="note"><b>命令不耗模型</b>：斜杠命令直接处理，不参与推理。</div>
+      </div>
+    </section>
+
+    <div class="modal" id="modal">
+      <div class="dialog">
+        <div class="dh"><span style="color:#FFD08A">⚠</span><b>需要你确认</b>
+          <span class="tag" style="margin-left:auto">高风险动作</span></div>
+        <div class="db">
+          Agent 想执行 <b>write_file</b>，这会修改本机文件：
+          <div class="code">path: E:\workspace\mybot\notes.txt
+content: 今天完成了 Agent Web UI（约 24 字）</div>
+          <div style="margin-top:10px;color:var(--muted);font-size:11.5px">拒绝后命令不会执行，会话里会留一条"已拒绝"记录。</div>
+        </div>
+        <div class="df">
+          <button class="btn ghost" onclick="deny()">拒绝</button>
+          <button class="btn primary" onclick="allow()">允许本次</button>
+        </div>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+  </main>
+</div>
+
+<script>
+const SCREENS = [
+  {group:"会话工作区", items:[
+    ["1","工作台首页"],["2","对话主区（工具卡片）"],["3","授权确认弹窗"],["4","运行状态面板"]
+  ]},
+  {group:"资源与设置", items:[
+    ["5","工作目录浏览"],["6","设置 · 模型与 Provider"],["7","设置 · 记忆与会话"],["8","设置 · MCP 服务"]
+  ]},
+  {group:"命令入口", items:[["9","命令行面板"]]}
+];
+const TITLES = {"1":["会话工作台","4 个模块 · 9 个页面"],"2":["对话主区","过程可折叠 · 只给结论"],
+ "3":["授权确认","高风险动作先问再做"],"4":["运行状态","模型 / 记忆 / 工具 / 会话"],
+ "5":["资源管理","工作目录即边界"],"6":["模型设置","换模型只改三行"],
+ "7":["记忆设置","参数可见 · 默认隔离"],"8":["MCP 设置","18 个工具只开 1 个"],
+ "9":["命令行","与网页共用同一套能力"]};
+const TAGS = {"1":["空态引导","会话即作用域"],"2":["工具卡片","运行编号"],"3":["二次确认","拒绝留痕"],
+ "4":["能力可见"],"5":["越权默认拒绝"],"6":["密钥脱敏"],"7":["跨会话默认关"],"8":["最小权限"],
+ "9":["不耗模型"]};
+
+let current = "1";
+let sessions = [
+  {name:"演示 · 读代码讲结构", t:"11/09 00:03", n:1},
+  {name:"课程论文 · 相关工作", t:"11/08 23:57", n:2},
+  {name:"默认会话", t:"11/08 22:46", n:0}
+];
+
+function renderNav(){
+  const nav = document.getElementById("nav");
+  nav.innerHTML = SCREENS.map(g=>`
+    <div class="group"><h4>${g.group}</h4>
+      ${g.items.map(([id,label])=>`
+        <div class="item ${id===current?'on':''}" onclick="go('${id}')">
+          <span class="num">${id}</span><span>${label}</span>
+        </div>`).join("")}
+    </div>`).join("");
+}
+function renderSessions(){
+  const html = sessions.map((s,i)=>`
+    <div class="sess ${i===0?'on':''}" onclick="go('2')">
+      <b>${s.name}</b><small>${s.t} · ${s.n} 条记忆</small>
+    </div>`).join("");
+  document.getElementById("sessionList").innerHTML = html;
+  const l2 = document.getElementById("sessionList2");
+  if(l2) l2.innerHTML = html;
+}
+function go(id){
+  current = id;
+  document.querySelectorAll(".screen").forEach(el=>{
+    el.classList.toggle("on", el.dataset.screen === id);
+  });
+  const [t, s] = TITLES[id] || ["", ""];
+  document.getElementById("title").innerHTML = `${t}<span id="sub">${s}</span>`;
+  document.getElementById("tags").innerHTML = (TAGS[id]||[]).map(x=>`<span class="tag hot">${x}</span>`).join("");
+  renderNav();
+  document.querySelector("main").scrollTop = 0;
+}
+function newSession(){
+  sessions.unshift({name:"新会话", t:"刚刚", n:0});
+  renderSessions();
+  toast("已新建会话，可直接开始提问");
+}
+function sendMsg(){
+  const input = document.getElementById("msgInput");
+  const text = input.value.trim();
+  if(!text) return;
+  const chat = document.getElementById("chat");
+  chat.insertAdjacentHTML("beforeend",
+    `<div class="msg user"><div class="who">YOU</div>${escapeHtml(text)}</div>`);
+  input.value = "";
+  setTimeout(()=>{
+    chat.insertAdjacentHTML("beforeend", `
+      <div class="msg bot"><div class="who">AGENT</div>
+        <div>（原型演示）我会先判断要不要用工具，再把结果回填给模型。</div>
+        <div class="toolcard" onclick="this.classList.toggle('open')">
+          <div class="th">▸ read_file · <span style="color:var(--dim)">README.md</span>
+            <span class="badge ok" style="margin-left:auto">成功 0.3s</span></div>
+          <div class="tb">返回 13 KB 正文。</div>
+        </div>
+      </div>`);
+    chat.scrollIntoView({block:"end", behavior:"smooth"});
+  }, 500);
+}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function openModal(){document.getElementById("modal").classList.add("on");}
+function allow(){document.getElementById("modal").classList.remove("on");toast("已允许：命令执行完成（演示）");}
+function deny(){document.getElementById("modal").classList.remove("on");toast("已拒绝：命令未执行，会话已留痕");}
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("on"), 1800);
+}
+renderNav(); renderSessions();
+(function(){
+  const h = (location.hash || "").replace("#", "");
+  const id = h.replace(/m$/, "");
+  go(TITLES[id] ? id : "1");
+  if (h.endsWith("m")) openModal();
+})();
+</script>
+</body>
+</html>
