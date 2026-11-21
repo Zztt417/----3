@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MyBot v2 高保真原型 · 热点 / 对话 / 设置</title>
+<style>
+  :root{
+    --bg:#F6F7F9; --card:#FFFFFF; --line:#E5E8EE; --line2:#EEF1F5;
+    --ink:#1E2430; --ink2:#38414F; --muted:#6B7688; --dim:#98A2B3;
+    --brand:#4F6BED; --brand-soft:#EDF1FE; --amber:#B7791F; --amber-soft:#FDF6E7;
+    --ok:#1F8A70; --ok-soft:#E9F6F1; --danger:#C0392B; --danger-soft:#FBEDEB;
+    --hot:#B4232A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:14px}
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+
+  /* 左侧原型导航 */
+  aside{background:#FBFCFD;border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{display:flex;gap:9px;align-items:center;padding:16px 16px 12px}
+  .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(150deg,#4F6BED,#7C93F5);
+        color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px}
+  .brand b{font-size:14.5px}
+  .brand small{display:block;color:var(--dim);font-size:10px;letter-spacing:1.2px}
+  .nav{overflow:auto;padding:4px 10px 16px}
+  .group{margin-top:12px}
+  .group h4{margin:0 0 5px;padding:0 8px;font-size:10.5px;color:var(--dim);letter-spacing:1px}
+  .item{display:flex;gap:8px;align-items:center;padding:7px 9px;border-radius:7px;cursor:pointer;
+        color:var(--ink2);font-size:12.5px;border:1px solid transparent}
+  .item:hover{background:#F0F3F8}
+  .item.on{background:var(--brand-soft);color:var(--brand);border-color:#DCE4FB;font-weight:600}
+  .num{width:18px;height:18px;border-radius:5px;background:#EEF1F5;color:var(--muted);
+       display:grid;place-items:center;font-size:10px;flex:0 0 auto}
+  .item.on .num{background:var(--brand);color:#fff}
+  .foot{margin-top:auto;padding:12px 16px;border-top:1px solid var(--line);color:var(--dim);font-size:10.5px;line-height:1.6}
+
+  main{padding:18px 22px 40px}
+  .bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .bar h1{margin:0;font-size:17px;font-weight:700}
+  .bar h1 span{color:var(--dim);font-weight:400;font-size:12px;margin-left:8px}
+  .tags{display:flex;gap:6px}
+  .tag{border:1px solid var(--line);background:#fff;color:var(--muted);padding:3px 9px;border-radius:999px;font-size:11px}
+  .tag.hot{border-color:#DCE4FB;background:var(--brand-soft);color:var(--brand)}
+
+  .screen{display:none}
+  .screen.on{display:block}
+  .frame{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+         box-shadow:0 8px 24px -18px rgba(30,36,48,.28)}
+  .cap{display:flex;gap:6px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);
+       background:#FAFBFC;color:var(--dim);font-size:11px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#D9DEE7}
+  .dot.r{background:#E9C6C6}.dot.y{background:#EADFC2}.dot.g{background:#C6E3D6}
+  .body{padding:14px}
+  .annot{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+  .note{border-left:2px solid var(--brand);background:#fff;border:1px solid var(--line);border-left-width:2px;
+        border-radius:0 8px 8px 0;padding:8px 11px;color:var(--muted);font-size:11.5px;line-height:1.6}
+  .note b{color:var(--ink2)}
+
+  .cols{display:grid;grid-template-columns:220px 1fr 220px;min-height:430px}
+  .col{padding:12px;border-right:1px solid var(--line2)}
+  .col:last-child{border-right:none}
+  .col h3{margin:0 0 9px;font-size:10.5px;letter-spacing:1px;color:var(--dim)}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:7px;
+       padding:7px 11px;cursor:pointer;font-size:12px;font-family:inherit}
+  .btn:hover{background:#F7F9FC}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.soft{background:var(--brand-soft);border-color:#DCE4FB;color:var(--brand)}
+  .btn.sm{padding:3px 8px;font-size:11px;border-radius:6px}
+  .sess{border:1px solid transparent;border-radius:8px;padding:8px 9px;cursor:pointer;margin-bottom:4px}
+  .sess:hover{background:#F7F9FC}
+  .sess.on{background:var(--brand-soft);border-color:#DCE4FB}
+  .sess b{display:block;font-size:12.5px;font-weight:600;color:var(--ink)}
+  .sess small{color:var(--dim);font-size:10px}
+
+  .chat{display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:88%;font-size:12.5px;line-height:1.7}
+  .msg .who{font-size:10px;color:var(--dim);margin-bottom:4px}
+  .msg.user{align-self:flex-end;text-align:right}
+  .msg.user .bubble{background:var(--brand);color:#fff;padding:9px 12px;border-radius:10px 10px 2px 10px;display:inline-block;text-align:left}
+  .msg.bot .bubble{background:#F7F9FC;border:1px solid var(--line);padding:9px 12px;border-radius:10px 10px 10px 2px}
+  .toolcard{border:1px solid var(--line);border-radius:8px;margin:7px 0;background:#fff}
+  .toolcard .th{display:flex;align-items:center;gap:7px;padding:7px 9px;cursor:pointer;font-size:11.5px;color:var(--ink2)}
+  .toolcard .tb{display:none;padding:7px 9px;border-top:1px solid var(--line2);color:var(--muted);font-size:11px}
+  .toolcard.open .tb{display:block}
+  .badge{padding:1px 6px;border-radius:5px;font-size:10px;border:1px solid}
+  .badge.ok{color:var(--ok);border-color:#CBE9DE;background:var(--ok-soft)}
+  .badge.warn{color:var(--amber);border-color:#F0DFC0;background:var(--amber-soft)}
+  .badge.err{color:var(--danger);border-color:#F2D2CC;background:var(--danger-soft)}
+  .cursor{display:inline-block;width:6px;height:13px;background:var(--brand);vertical-align:-2px;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:0}}
+  .input{display:flex;gap:7px;margin-top:10px}
+  .input input{flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;font-family:inherit;outline:none;background:#fff}
+  .input input:focus{border-color:#B9C6F5;box-shadow:0 0 0 3px #EDF1FE}
+  .tools-row{display:flex;gap:6px;margin-top:7px;color:var(--dim);font-size:11px}
+  .link{color:var(--brand);cursor:pointer}
+
+  .card{border:1px solid var(--line);border-radius:9px;padding:10px 11px;margin-bottom:8px;background:#fff}
+  .card .k{font-size:10px;color:var(--dim);letter-spacing:.6px}
+  .card .v{font-size:12.5px;margin-top:4px;color:var(--ink2)}
+  .chip{display:inline-block;padding:2px 7px;border-radius:5px;background:#F2F4F8;color:var(--ink2);
+        font-size:10.5px;margin:2px 4px 0 0;border:1px solid var(--line2)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2)}
+  .row:last-child{border-bottom:none}
+  .row b{font-size:12.5px;font-weight:600}
+  .row small{display:block;color:var(--dim);font-size:10.5px;margin-top:2px}
+  .field{border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:11.5px;color:var(--ink2);background:#fff;min-width:120px}
+  .switch{width:36px;height:20px;border-radius:999px;background:#DDE2EA;position:relative;cursor:pointer}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
+  .switch.on{background:var(--brand)}
+  .switch.on::after{left:19px}
+
+  /* 热点首页 */
+  .hotwrap{display:grid;grid-template-columns:1fr 240px;gap:14px}
+  .platforms{display:flex;gap:6px;margin-bottom:10px}
+  .pf{padding:5px 10px;border-radius:7px;border:1px solid var(--line);background:#fff;font-size:11.5px;cursor:pointer;color:var(--ink2)}
+  .pf.on{background:var(--brand-soft);border-color:#DCE4FB;color:var(--brand);font-weight:600}
+  .hitem{display:grid;grid-template-columns:26px 1fr auto;gap:10px;padding:10px 11px;border:1px solid var(--line);
+         border-radius:9px;margin-bottom:7px;background:#fff}
+  .rank{width:22px;height:22px;border-radius:6px;background:#F2F4F8;display:grid;place-items:center;font-size:11px;color:var(--muted);font-weight:700}
+  .rank.top{background:#FBEDEB;color:var(--hot)}
+  .hitem b{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .hitem .meta{color:var(--dim);font-size:10.5px;margin-top:3px}
+  .hitem .ai{margin-top:5px;font-size:11px;color:var(--muted);background:#FAFBFD;border:1px dashed var(--line);border-radius:6px;padding:5px 7px}
+  .heat{color:var(--hot);font-size:11px;font-weight:600}
+  .sug{border:1px solid var(--line);border-radius:9px;padding:10px;background:#fff}
+  .sug h4{margin:0 0 7px;font-size:11px;color:var(--dim);letter-spacing:.6px}
+  .sug div{font-size:11.5px;color:var(--ink2);padding:6px 0;border-bottom:1px dashed var(--line2)}
+  .sug div:last-child{border-bottom:none}
+
+  /* CLI */
+  .cli{background:#FCFCFD;border:1px solid var(--line);border-radius:9px;padding:12px;font-family:Consolas,monospace;
+       font-size:12px;line-height:1.9;color:#2B3444}
+  .cli .p{color:var(--brand)}.cli .o{color:#5B6677}.cli .t{color:var(--ok)}
+  /* 移动端 */
+  .phone{width:330px;margin:0 auto;border:10px solid #E9ECF2;border-radius:26px;background:#fff;overflow:hidden}
+  .phone .ph{padding:9px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--dim);display:flex;justify-content:space-between}
+  .phone .pb{padding:11px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(16px);opacity:0;
+         background:#1E2430;color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;transition:.22s;pointer-events:none}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><div class="mark">M</div><div><b>MyBot 原型</b><small>LOCAL AGENT · v1.0</small></div></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="foot">高保真原型 · 第二次团队作业<br/>可点击 · 数据为演示数据</div>
+  </aside>
+  <main>
+    <div class="bar"><h1 id="title">热点首页<span id="sub"></span></h1><div class="tags" id="tags"></div></div>
+
+    <!-- 1 热点首页 -->
+    <section class="screen on" data-screen="1">
+      <div class="frame">
+        <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          热点首页 · 每 30 分钟刷新 · 数据源 4 个平台</div>
+        <div class="body">
+          <div class="hotwrap">
+            <div>
+              <div class="platforms">
+                <span class="pf on">抖音</span><span class="pf">B站</span><span class="pf">微博</span><span class="pf">小红书</span>
+                <span class="pf" style="margin-left:auto" onclick="toast('正在刷新热点…')">刷新</span>
+              </div>
+              <div class="hitem"><div class="rank top">1</div>
+                <div><b>AI 编程工具进入「任务级」竞争</b>
+                  <div class="meta">抖音 · 热度 986 万 · 12 分钟前</div>
+                  <div class="ai">AI 分级 S：与开发者日常强相关，建议做一期实测对比。</div></div>
+                <div style="text-align:right"><div class="heat">986w</div>
+                  <span class="badge ok" style="margin-top:5px;display:inline-block">S</span></div></div>
+              <div class="hitem"><div class="rank top">2</div>
+                <div><b>本地部署大模型到底省不省钱</b>
+                  <div class="meta">B站 · 热度 512 万 · 26 分钟前</div>
+                  <div class="ai">AI 分级 A：有争议点，适合做成本拆解。</div></div>
+                <div style="text-align:right"><div class="heat">512w</div>
+                  <span class="badge warn" style="margin-top:5px;display:inline-block">A</span></div></div>
+              <div class="hitem"><div class="rank">3</div>
+                <div><b>大学生用 Agent 做课程作业引讨论</b>
+                  <div class="meta">微博 · 热度 287 万 · 41 分钟前</div>
+                  <div class="ai">AI 分级 B：话题性强，注意观点平衡。</div></div>
+                <div style="text-align:right"><div class="heat">287w</div>
+                  <span class="badge" style="margin-top:5px;display:inline-block;border-color:var(--line);color:var(--muted)">B</span></div></div>
+            </div>
+            <div class="sug">
+              <h4>灵感推荐</h4>
+              <div>「让 Agent 自己写周报」实测</div>
+              <div>本地模型的真实电费账单</div>
+              <div>3 个提示词把热点变选题</div>
+              <h4 style="margin-top:12px">标签</h4>
+              <span class="chip">AI 工具</span><span class="chip">本地部署</span><span class="chip">学生党</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>默认首页</b>：先给"今天能聊什么"，再进对话。</div>
+        <div class="note"><b>分级不是摆设</b>：S/A/B 由模型判断，附一句理由，可点开溯源。</div>
+      </div>
+    </section>
+
+    <!-- 2 对话页 -->
+    <section class="screen" data-screen="2">
+      <div class="frame">
+        <div class="cap">对话页 · session 20261115-120000-abc · SSE 流式</div>
+        <div class="body">
+          <div class="cols">
+            <div class="col">
+              <h3>会话</h3>
+              <button class="btn primary" style="width:100%;margin-bottom:8px" onclick="toast('已新建会话')">+ 新建对话</button>
+              <div class="sess on"><b>热点选题分析</b><small>11/15 12:00 · 2 条记忆</small></div>
+              <div class="sess"><b>项目结构讲解</b><small>11/15 11:20 · 0 条记忆</small></div>
+              <div class="sess"><b>默认会话</b><small>11/15 10:02 · 1 条记忆</small></div>
+            </div>
+            <div class="col">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <b style="font-size:13px">热点选题分析</b><span class="badge ok">SSE 已连接</span>
+              </div>
+              <div class="chat">
+                <div class="msg user"><div class="who">你</div><div class="bubble">把今天抖音第一名的热点，展开成三个选题角度</div></div>
+                <div class="msg bot"><div class="who">MyBot</div>
+                  <div class="bubble">先给你三个方向，每个都标了适合的平台和风险点。
+                    <div class="toolcard" onclick="this.classList.toggle('open')">
+                      <div class="th">▸ web_search · <span style="color:var(--dim)">AI 编程工具 任务级</span>
+                        <span class="badge ok" style="margin-left:auto">成功 1.2s</span></div>
+                      <div class="tb">返回 5 条结果，取前 3 条做交叉验证。</div>
+                    </div>
+                    <div>① 实测对比：三家工具做同一个需求，谁一次过；② 成本账：任务级收费到底贵在哪；③ 使用边界：哪些活不该交给它。</div>
+                  </div>
+                  <div class="tools-row"><span class="link" onclick="toast('已复制')">复制</span>·
+                    <span class="link" onclick="toast('已重新生成')">重新生成</span>·<span>用时 6.4s</span></div>
+                </div>
+                <div class="msg bot" style="opacity:.65"><div class="who">MyBot</div>
+                  <div class="bubble">（正在生成…<span class="cursor"></span>）</div></div>
+              </div>
+              <div class="input"><input placeholder="给 agent 一个任务…（Enter 发送）"/>
+                <button class="btn primary" onclick="toast('演示：SSE 流式返回中')">发送</button></div>
+            </div>
+            <div class="col">
+              <h3>运行状态</h3>
+              <div class="card"><div class="k">模型</div><div class="v">deepseek-chat</div></div>
+              <div class="card"><div class="k">记忆</div><div class="v">短期 8/30 · 长期 2</div></div>
+              <div class="card"><div class="k">工具</div><div class="v">8 个内置 + 3 个 MCP</div></div>
+              <div class="card"><div class="k">Skills</div><div class="v">已启用 2 个</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>流式</b>：先出状态（正在思考 / 正在调用工具），再出 token。</div>
+        <div class="note"><b>可回溯</b>：工具调用折叠成卡，复制与重新生成都在消息下方。</div>
+      </div>
+    </section>
+
+    <!-- 3 运行状态 -->
+    <section class="screen" data-screen="3">
+      <div class="frame">
+        <div class="cap">运行状态 · 一眼看清现在能做什么</div>
+        <div class="body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <div class="card"><div class="k">MODEL / PROVIDER</div><div class="v">deepseek-chat · api.deepseek.com</div></div>
+              <div class="card"><div class="k">MEMORY</div><div class="v">短期 8/30 · 长期 2 条 · top-k 3</div></div>
+              <div class="card"><div class="k">HOTSPOTS</div><div class="v">4 个平台 · 缓存 12 分钟前刷新</div></div>
+            </div>
+            <div>
+              <div class="card"><div class="k">TOOLS（8）</div>
+                <div style="margin-top:4px"><span class="chip">read_file</span><span class="chip">write_file</span>
+                  <span class="chip">run_shell</span><span class="chip">web_search</span><span class="chip">web_fetch</span>
+                  <span class="chip">pdf_parse</span><span class="chip">memory_save</span><span class="chip">memory_search_other_sessions</span></div></div>
+              <div class="card"><div class="k">MCP</div><div class="v">1 个服务已连接 · 3 个工具</div></div>
+              <div class="card"><div class="k">安全</div><div class="v">仅监听 127.0.0.1 · 密钥在 ~/.mybot</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>降级可见</b>：模型未配置、MCP 未连接都直接写在状态里，不假装正常。</div>
+      </div>
+    </section>
+
+    <!-- 4 设置·模型 -->
+    <section class="screen" data-screen="4">
+      <div class="frame">
+        <div class="cap">设置 · 模型 API</div>
+        <div class="body">
+          <div class="row"><div><b>服务商</b><small>DeepSeek / OpenAI / 自定义</small></div>
+            <div class="field" style="min-width:180px">DeepSeek（预设）</div></div>
+          <div class="row"><div><b>Base URL</b><small>兼容 OpenAI 协议即可</small></div>
+            <div class="field" style="min-width:230px">https://api.deepseek.com/v1</div></div>
+          <div class="row"><div><b>模型</b><small>切换后下一轮对话生效</small></div>
+            <div class="field" style="min-width:180px">deepseek-chat</div></div>
+          <div class="row"><div><b>API Key</b><small>只显示前后四位，存本机</small></div>
+            <div class="field" style="min-width:180px">sk-59b4••••••af54</div></div>
+          <div style="margin-top:10px;display:flex;gap:7px">
+            <button class="btn" onclick="toast('连接正常，延迟 320ms')">测试连接</button>
+            <button class="btn primary" onclick="toast('已保存，下一轮生效')">保存</button>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>预设优先</b>：常见服务商一键填好，自定义再手填三项。</div>
+        <div class="note"><b>先测后存</b>：测试连接走一次最小请求，避免存了才发现 Key 错。</div>
+      </div>
+    </section>
+
+    <!-- 5 设置·Skills -->
+    <section class="screen" data-screen="5">
+      <div class="frame">
+        <div class="cap">设置 · Skills · 已安装 3 个，启用 2 个</div>
+        <div class="body">
+          <div style="display:flex;gap:7px;margin-bottom:10px">
+            <div class="field" style="flex:1">搜索 GitHub Skills…</div>
+            <button class="btn" onclick="toast('正在扫描 GitHub 目录…')">浏览目录</button>
+            <button class="btn" onclick="toast('已重新扫描本地 Skills')">重新扫描</button>
+          </div>
+          <div class="row"><div><b>commit-helper</b><small>生成规范的提交信息 · v1.2 · 来自 GitHub</small></div>
+            <div style="display:flex;gap:8px;align-items:center"><span class="switch on" onclick="this.classList.toggle('on')"></span></div></div>
+          <div class="row"><div><b>paper-outline</b><small>论文提纲与文献整理 · v0.9 · 本地</small></div>
+            <div style="display:flex;gap:8px;align-items:center"><span class="switch on" onclick="this.classList.toggle('on')"></span></div></div>
+          <div class="row"><div><b>sql-review</b><small>SQL 审查清单 · v1.0 · 已停用</small></div>
+            <div style="display:flex;gap:8px;align-items:center"><span class="switch" onclick="this.classList.toggle('on')"></span></div></div>
+          <div style="margin-top:10px;color:var(--dim);font-size:11px;line-height:1.7">
+            启用的 Skill 只在相关对话里注入摘要，不常驻上下文；安装前展示仓库与版本，确认后才落盘。</div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>按需注入</b>：不启用就不占上下文，避免"装了就变慢"。</div>
+        <div class="note"><b>可溯源</b>：每个 Skill 标明来源（GitHub / 本地）与版本。</div>
+      </div>
+    </section>
+
+    <!-- 6 设置·MCP -->
+    <section class="screen" data-screen="6">
+      <div class="frame">
+        <div class="cap">设置 · MCP · 1 个服务已连接</div>
+        <div class="body">
+          <div style="display:flex;gap:7px;margin-bottom:10px">
+            <div class="field" style="flex:1">搜索官方 MCP Registry…</div>
+            <button class="btn" onclick="toast('正在搜索 Registry…')">搜索</button>
+          </div>
+          <div class="card"><div style="display:flex;justify-content:space-between;align-items:center">
+            <div><b style="font-size:12.5px">filesystem</b><div class="k" style="margin-top:3px">stdio · 3 个工具 · 已连接</div></div>
+            <div style="display:flex;gap:6px"><button class="btn sm" onclick="toast('已重启服务')">重启</button>
+              <button class="btn sm" onclick="toast('已停用')">停用</button></div></div>
+            <div style="margin-top:7px"><span class="chip">read_file</span><span class="chip">list_dir</span><span class="chip">search</span></div></div>
+          <div class="card"><div style="display:flex;justify-content:space-between;align-items:center">
+            <div><b style="font-size:12.5px">github</b><div class="k" style="margin-top:3px">http · 未配置 Token · 已停用</div></div>
+            <button class="btn sm" onclick="toast('请先填写 Token')">配置</button></div></div>
+          <div style="margin-top:8px;color:var(--dim);font-size:11px;line-height:1.7">
+            MCP 工具按「服务名__工具名」命名，避免与内置工具重名；env / headers 在接口返回时脱敏。</div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>命名空间</b>：多服务并存时靠前缀隔离。</div>
+        <div class="note"><b>失败不扩散</b>：单个 MCP 挂掉，内置工具照常可用。</div>
+      </div>
+    </section>
+
+    <!-- 7 命令行 -->
+    <section class="screen" data-screen="7">
+      <div class="frame">
+        <div class="cap">命令行 · python main.py</div>
+        <div class="body">
+          <div class="cli">
+<div><span class="p">你 &gt;</span> /help</div>
+<div class="o">可用命令：/sessions /new /switch /delete /history /help exit</div>
+<div style="margin-top:8px"><span class="p">你 &gt;</span> 读一下 requirements.txt，告诉我装了哪些库</div>
+<div class="o">[工具] <span class="t">read_file(path="requirements.txt") → 156 B</span><br/>
+共 8 个库：openai、python-dotenv、chromadb、sentence-transformers、pdfplumber、mcp、fastapi、uvicorn。</div>
+<div style="margin-top:8px"><span class="p">你 &gt;</span> <span style="opacity:.45">▌</span></div>
+          </div>
+          <div style="margin-top:10px;color:var(--dim);font-size:11px">命令行与网页共用同一套 Agent、会话与记忆。</div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>同一内核</b>：CLI 不是阉割版，工具与记忆完全一致。</div>
+      </div>
+    </section>
+
+    <!-- 8 异常态 -->
+    <section class="screen" data-screen="8">
+      <div class="frame">
+        <div class="cap">异常与降级 · 三种最常见的坏情况</div>
+        <div class="body">
+          <div class="card" style="border-color:#F0DFC0;background:var(--amber-soft)">
+            <b style="font-size:12.5px">模型还没配置</b>
+            <div style="font-size:11.5px;color:var(--ink2);margin-top:4px">
+              对话不可用，但会话、历史、热点仍可浏览。<span class="link" onclick="toast('跳到设置')">去设置 →</span></div></div>
+          <div class="card" style="border-color:#F2D2CC;background:var(--danger-soft)">
+            <b style="font-size:12.5px">MCP 服务连接失败</b>
+            <div style="font-size:11.5px;color:var(--ink2);margin-top:4px">
+              filesystem 启动超时；内置 8 个工具仍可用。<span class="link" onclick="toast('已重试')">重试</span></div></div>
+          <div class="card">
+            <b style="font-size:12.5px">流式中断</b>
+            <div style="font-size:11.5px;color:var(--ink2);margin-top:4px">
+              已收到的内容保留，底部出现「重试」；不会重复扣一次回答。</div></div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>坏情况也是设计的一部分</b>：每个异常都给出口，不给死路。</div>
+      </div>
+    </section>
+
+    <!-- 9 移动端 -->
+    <section class="screen" data-screen="9">
+      <div class="frame">
+        <div class="cap">移动端 · 360px 宽度下的对话页</div>
+        <div class="body" style="background:#F0F2F6;padding:18px">
+          <div class="phone">
+            <div class="ph"><span>← 会话</span><span>热点选题分析</span><span>⋯</span></div>
+            <div class="pb">
+              <div class="msg bot"><div class="bubble" style="font-size:11.5px">三个方向：实测对比 / 成本账 / 使用边界。</div></div>
+              <div class="input"><input placeholder="说点什么…" style="font-size:11.5px"/><button class="btn primary sm">发送</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <div class="note"><b>窄屏优先</b>：会话栏收进抽屉，输入框贴底。</div>
+      </div>
+    </section>
+
+    <div class="toast" id="toast"></div>
+  </main>
+</div>
+<script>
+const NAV = [
+  {group:"对话与状态", items:[["1","热点首页"],["2","对话页（SSE）"],["3","运行状态"]]},
+  {group:"设置（三个标签页）", items:[["4","设置 · 模型 API"],["5","设置 · Skills"],["6","设置 · MCP"]]},
+  {group:"入口与边界", items:[["7","命令行"],["8","异常与降级"],["9","移动端"]]}
+];
+const T = {"1":["热点首页","默认首页 · 4 个平台"],"2":["对话页","SSE 流式 · 工具卡片"],
+ "3":["运行状态","模型 / 记忆 / 工具 / MCP"],"4":["设置 · 模型 API","预设 + 测试连接"],
+ "5":["设置 · Skills","按需注入"],"6":["设置 · MCP","命名空间 + 脱敏"],
+ "7":["命令行","与网页共用内核"],"8":["异常与降级","每种坏情况都有出口"],
+ "9":["移动端","360px 布局"]};
+const TG = {"1":["默认首页","AI 分级"],"2":["SSE","复制 / 重生成"],"3":["能力可见"],
+ "4":["先测后存"],"5":["启停开关"],"6":["多服务"],"7":["同一内核"],"8":["降级不阻断"],"9":["窄屏优先"]};
+let cur="1";
+function go(id){
+  cur=id;
+  document.querySelectorAll(".screen").forEach(el=>el.classList.toggle("on",el.dataset.screen===id));
+  const [t,s]=T[id]||["",""];
+  document.getElementById("title").innerHTML=`${t}<span>${s}</span>`;
+  document.getElementById("tags").innerHTML=(TG[id]||[]).map(x=>`<span class="tag hot">${x}</span>`).join("");
+  renderNav(); window.scrollTo(0,0);
+}
+function renderNav(){
+  document.getElementById("nav").innerHTML=NAV.map(g=>`
+    <div class="group"><h4>${g.group}</h4>
+      ${g.items.map(([id,l])=>`<div class="item ${id===cur?'on':''}" onclick="go('${id}')">
+        <span class="num">${id}</span><span>${l}</span></div>`).join("")}
+    </div>`).join("");
+}
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("on");
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),1600);
+}
+renderNav();
+(function(){const h=(location.hash||"").replace("#","");go(T[h]?h:"1");})();
+</script>
+</body>
+</html>
